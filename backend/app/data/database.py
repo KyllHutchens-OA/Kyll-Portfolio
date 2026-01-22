@@ -9,8 +9,13 @@ from app.config import get_config
 config = get_config()
 
 # Create database engine
+# Convert postgresql:// to postgresql+psycopg:// for psycopg3
+database_url = config.DATABASE_URL
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
 engine = create_engine(
-    config.DATABASE_URL,
+    database_url,
     pool_pre_ping=True,  # Verify connections before using
     pool_size=10,
     max_overflow=20,
