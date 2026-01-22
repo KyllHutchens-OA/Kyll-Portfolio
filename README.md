@@ -1,0 +1,193 @@
+# AFL Sports Analytics Agent
+
+> A production-ready AFL analytics agent demonstrating agentic AI capabilities through a clean chat interface with Hex-quality visualizations.
+
+## Overview
+
+This project showcases an AI agent that autonomously analyzes Australian Football League (AFL) statistics, performs multi-step reasoning, and provides insights through natural language conversation with embedded interactive visualizations.
+
+**Tech Stack**: Flask (backend) + React (frontend) + LangGraph (agent framework) + Supabase (PostgreSQL) + Plotly (visualizations)
+
+## Features
+
+- **Natural Language Queries**: Ask questions in plain English about AFL statistics
+- **Multi-Step Reasoning**: Agent autonomously plans and executes complex analyses
+- **Interactive Visualizations**: Hex-quality Plotly charts embedded in chat
+- **Real-time Streaming**: See the agent's thinking process as it works
+- **5 Years of Data**: Historical AFL statistics from 2020-2024
+
+### Example Queries
+
+```
+"Compare Patrick Cripps and Clayton Oliver's disposals this season"
+"Show me Collingwood's scoring trend across 2024"
+"How has Max Gawn's hitout average changed from 2020 to 2024?"
+"Which teams had the most tackles in 2023?"
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Supabase account (free tier)
+- OpenAI API key
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repo-url>
+   cd afl-analytics-agent
+   ```
+
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase and OpenAI credentials
+   ```
+
+3. **Start services**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Run data ingestion** (first time only)
+   ```bash
+   docker-compose exec backend python -m app.data.ingestion.afl_tables
+   ```
+
+5. **Open the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+
+## Project Structure
+
+```
+├── backend/          # Flask API and LangGraph agent
+│   ├── app/
+│   │   ├── agent/        # LangGraph workflow and tools
+│   │   ├── api/          # REST endpoints and WebSocket
+│   │   ├── data/         # Database models and scrapers
+│   │   ├── analytics/    # SQL generation and statistics
+│   │   └── visualization/# Plotly chart builder
+│   └── tests/
+│
+├── frontend/         # React chat interface
+│   ├── src/
+│   │   ├── components/   # Chat UI and chart renderer
+│   │   ├── hooks/        # WebSocket streaming logic
+│   │   └── services/     # API clients
+│   └── tests/
+│
+├── database/         # Schema and migrations
+│   ├── migrations/
+│   └── seeds/
+│
+└── docs/             # Project documentation
+    └── CONTEXT.md    # Current development state
+```
+
+## Documentation
+
+- [CONTEXT.md](docs/CONTEXT.md) - Current project state (read this first!)
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and data flow
+- [API.md](docs/API.md) - API endpoints and WebSocket events
+- [DATABASE.md](docs/DATABASE.md) - Database schema documentation
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment instructions
+
+## Development
+
+### Backend
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+flask run
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Testing
+
+```bash
+# Backend tests
+cd backend
+pytest
+
+# Frontend tests
+cd frontend
+npm test
+```
+
+## Architecture
+
+The agent uses **LangGraph** to orchestrate a multi-step workflow:
+
+```
+1. UNDERSTAND → Parse user intent and extract entities
+2. PLAN → Determine analysis steps
+3. EXECUTE → Run SQL queries and calculate statistics
+4. VISUALIZE → Generate Plotly chart specifications
+5. RESPOND → Format natural language summary
+```
+
+**Key Design Principles**:
+- No code visible to users (SQL, Python, or errors)
+- Streaming status updates ("Analyzing player statistics...")
+- Hex-quality chart styling with Plotly
+- Graceful degradation for complex queries
+
+## Database Schema
+
+Core tables:
+- `teams` - AFL teams (18 teams)
+- `players` - Player metadata
+- `matches` - Match results (2020-2024)
+- `player_stats` - Per-match player statistics
+- `team_stats` - Per-match team statistics
+- `conversations` - Agent conversation history
+
+## Cost
+
+- **Development**: Free (uses Supabase free tier)
+- **Production**: ~$10-20/month (OpenAI API calls)
+- All other components are free/open-source
+
+## Roadmap
+
+### MVP (Current)
+- ✅ Historical data (2020-2024)
+- ✅ Basic statistical queries
+- ✅ Interactive visualizations
+- ✅ Chat interface with streaming
+
+### Phase 2 (Future)
+- [ ] Advanced analytics (expected stats, form analysis)
+- [ ] Live 2025 season data (Squiggle API)
+- [ ] User authentication
+- [ ] Conversation history and sharing
+
+## Contributing
+
+This is a portfolio project demonstrating agentic AI capabilities. Contributions welcome!
+
+## License
+
+MIT
+
+## Contact
+
+Built as a data science portfolio project showcasing modern AI agent development.
+
+---
+
+**Built with**: LangGraph • Flask • React • Supabase • Plotly
