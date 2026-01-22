@@ -1,10 +1,10 @@
 # AFL Analytics Agent - Current State
 
 ## Last Updated
-2026-01-22 by Claude Code
+2026-01-22 17:35 by Claude Code
 
 ## Project Status
-🟡 Week 1: Foundation - Database and scraper implemented, awaiting Supabase connection
+🟢 Week 1: COMPLETE - Foundation, database, and 5 years of AFL data ingested!
 
 ## What's Working
 - ✅ Project structure initialized with all directories
@@ -16,36 +16,27 @@
 - ✅ Python virtual environment set up with core dependencies
 
 ## Currently Working On
-- 🔨 Verifying Supabase database connection
-- 🔨 Testing database initialization
-- 🔨 Running first data ingestion test
+- ✅ Week 1 complete! Ready to start Week 2 (LangGraph agent implementation)
 
 ## Next Steps
-1. **Fix Supabase connection**:
-   - Verify Supabase project is created and running
-   - Update `.env` file with correct connection string from Supabase dashboard
-   - Test database connection with `python scripts/init_db.py`
+1. **Build Flask API with health check endpoint**
+2. **Create LangGraph agent core (Week 2)**:
+   - Set up LangGraph workflow graph (UNDERSTAND → PLAN → EXECUTE → RESPOND)
+   - Implement query_database tool with SQL validation
+   - Build text-to-SQL generator using GPT-4
+   - Test with simple queries ("Who won the 2024 grand final?")
 
-2. **Test scraper with 2024 season**:
-   - Run: `python scripts/ingest_data.py`
-   - Verify data is correctly inserted into database
-
-3. **Ingest full historical data (2020-2024)**:
-   - Scraper configured to fetch 5 years of AFL data
-   - Expected ~1,000+ matches, ~45,000+ player stat records
-
-4. **Build Flask API with health check endpoint**
-
-5. **Create LangGraph agent core (Week 2)**
+3. **Add visualization and streaming (Week 3)**
+4. **Deploy and polish (Week 4)**
 
 ## Known Issues
-- ❌ Supabase host cannot be resolved: `db.igdcvgxbglzhhfczznhw.supabase.co`
-  - **Cause**: Either Supabase project not set up, or incorrect connection string
-  - **Fix**: Verify Supabase project exists and update `.env` with correct `DB_STRING`
+- None! All Week 1 blockers resolved.
 
-- ⚠️ Python 3.14 compatibility:
-  - Updated dependencies to use psycopg3 instead of psycopg2
-  - Using latest pandas/numpy versions for Python 3.14 support
+## Issues Resolved
+- ✅ Supabase connection fixed (using pooler endpoint)
+- ✅ Python 3.14 compatibility achieved (psycopg3, pandas 2.2+)
+- ✅ Squiggle API User-Agent header added
+- ✅ Prepared statements disabled for Supabase pooler compatibility
 
 ## Important Decisions Made
 - Using **Squiggle API** instead of scraping AFL Tables (cleaner JSON data, easier to parse)
@@ -104,32 +95,19 @@ git log --oneline -5
 cat docs/CONTEXT.md
 ```
 
-### Current Blocker
-**Fix Supabase connection before proceeding:**
-
-1. Go to https://supabase.com/dashboard
-2. Create new project or verify existing project
-3. Project Settings → Database → Connection string (Transaction pooler)
-4. Update `.env`:
-   ```bash
-   DB_STRING='postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT.supabase.co:5432/postgres'
-   ```
-5. Test connection:
-   ```bash
-   python scripts/init_db.py
-   ```
-
-### After Supabase Fixed
+### Verify Data Ingestion
 ```bash
-# Initialize database (creates all tables)
-python scripts/init_db.py
+# Check ingested data
+python scripts/check_data.py
 
-# Test scraper with 2024 season
-python scripts/ingest_data.py
-
-# Verify data
-# (Connect to Supabase dashboard and check tables)
+# Should show:
+# - 18 teams
+# - 1,008 matches (2020-2024)
+# - 2,016 team stats records
 ```
+
+### Ready for Week 2
+Week 1 foundation is complete! Next session can begin LangGraph agent implementation.
 
 ## Tech Stack Summary
 
@@ -141,11 +119,13 @@ python scripts/ingest_data.py
 ## Git Repository
 - **URL**: https://github.com/KyllHutchens-OA/AFLChat.git
 - **Branch**: main
-- **Last Commit**: feat: initialize AFL Sports Analytics Agent project
+- **Last Commit**: feat(data): fix Supabase connection and complete AFL data ingestion
+- **Status**: Week 1 complete, 1,008 matches ingested
 
-## Next Session Priorities
-1. Fix Supabase connection
-2. Test database initialization
-3. Run first data ingestion (2024 season)
-4. Verify data quality
-5. Start Flask API implementation
+## Next Session Priorities (Week 2)
+1. Set up Flask API with health check endpoint
+2. Install and configure LangGraph
+3. Create agent workflow graph (UNDERSTAND → PLAN → EXECUTE → RESPOND)
+4. Implement query_database tool with SQL validation
+5. Build text-to-SQL generator using GPT-4
+6. Test with simple queries
