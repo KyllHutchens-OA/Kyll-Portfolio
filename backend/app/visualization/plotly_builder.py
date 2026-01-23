@@ -1,0 +1,489 @@
+"""
+AFL Analytics Agent - Plotly Chart Builder
+
+Generates Hex-quality Plotly chart specifications.
+"""
+from typing import Dict, Any, List, Optional
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import logging
+import re
+
+logger = logging.getLogger(__name__)
+
+
+class ChartHelper:
+    """Helper functions for chart generation."""
+
+    @staticmethod
+    def humanize_column_name(col_name: str) -> str:
+        """
+        Convert database column names to human-readable labels.
+
+        Examples:
+            "win_loss_ratio" -> "Win/Loss Ratio"
+            "avg_score_per_game" -> "Avg Score Per Game"
+            "season" -> "Season"
+        """
+        # Special cases first
+        special_cases = {
+            "win_loss_ratio": "Win/Loss Ratio",
+            "win_rate": "Win Rate",
+            "avg_score_per_game": "Average Score",
+            "total_score": "Total Score",
+            "team_score": "Team Score",
+            "opponent_score": "Opponent Score",
+            "home_score": "Home Score",
+            "away_score": "Away Score",
+            "match_date": "Date",
+            "season": "Season",
+            "round": "Round",
+            "wins": "Wins",
+            "losses": "Losses",
+            "draws": "Draws",
+            "matches": "Matches Played",
+            "games": "Games",
+            "margin": "Margin",
+            "opponent": "Opponent",
+            "result": "Result"
+        }
+
+        if col_name.lower() in special_cases:
+            return special_cases[col_name.lower()]
+
+        # Generic humanization: replace underscores with spaces and title case
+        human = col_name.replace("_", " ").title()
+        return human
+
+    @staticmethod
+    def generate_chart_title(
+        intent: str,
+        entities: Dict[str, Any],
+        metrics: List[str],
+        data_cols: List[str]
+    ) -> str:
+        """
+        Generate a descriptive chart title based on query intent and entities.
+
+        Args:
+            intent: Query intent (TREND_ANALYSIS, TEAM_ANALYSIS, etc.)
+            entities: Extracted entities (teams, seasons, players)
+            metrics: Key metrics being visualized
+            data_cols: All column names in the data
+
+        Returns:
+            Human-readable chart title
+        """
+        teams = entities.get("teams", [])
+        seasons = entities.get("seasons", [])
+
+        # Extract team name (first team or "Teams" if multiple)
+        team_name = teams[0] if len(teams) == 1 else "Teams" if len(teams) > 1 else ""
+
+        # Determine primary metric being visualized
+        metric = None
+        if "win_loss_ratio" in data_cols or "win_loss_ratio" in metrics:
+            metric = "Win/Loss Ratio"
+        elif "win_rate" in data_cols or "win_percentage" in metrics:
+            metric = "Win Rate"
+        elif "wins" in data_cols:
+            metric = "Wins"
+        elif "avg_score_per_game" in data_cols or "scoring" in metrics:
+            metric = "Scoring"
+        elif "margin" in data_cols:
+            metric = "Margin"
+        elif "total_score" in data_cols:
+            metric = "Total Score"
+
+        # Build title based on intent
+        if intent == "TREND_ANALYSIS" or str(intent) == "QueryIntent.TREND_ANALYSIS":
+            # Time-series title
+            if team_name and metric:
+                if seasons and len(seasons) > 1:
+                    return f"{team_name} {metric} ({seasons[0]}-{seasons[-1]})"
+                return f"{team_name} {metric} Over Time"
+            elif team_name:
+                return f"{team_name} Performance Over Time"
+            elif metric:
+                return f"{metric} Trend"
+            return "Performance Trend"
+
+        elif intent == "PLAYER_COMPARISON" or str(intent) == "QueryIntent.PLAYER_COMPARISON":
+            return "Player Comparison"
+
+        elif intent == "TEAM_ANALYSIS" or str(intent) == "QueryIntent.TEAM_ANALYSIS":
+            if team_name and seasons and len(seasons) == 1:
+                return f"{team_name} {seasons[0]} Season"
+            elif team_name:
+                return f"{team_name} Analysis"
+            return "Team Performance"
+
+        else:
+            # Default for simple stats
+            if team_name and metric:
+                return f"{team_name} {metric}"
+            elif metric:
+                return metric
+            return "AFL Statistics"
+
+
+class PlotlyBuilder:
+    """
+    Builds Plotly chart specifications with Hex-quality theming.
+
+    Design Principles:
+    - Clean, professional appearance
+    - Consistent color palette
+    - Clear labels and titles
+    - Interactive tooltips
+    - Responsive design
+    """
+
+    # Hex-inspired color palette
+    COLORS = {
+        "primary": "#3b82f6",  # Blue
+        "secondary": "#ef4444",  # Red
+        "success": "#10b981",  # Green
+        "warning": "#f59e0b",  # Orange
+        "purple": "#8b5cf6",  # Purple
+        "teal": "#14b8a6",  # Teal
+        "gray": "#6b7280",  # Gray
+    }
+
+    COLOR_SEQUENCE = [
+        COLORS["primary"],
+        COLORS["secondary"],
+        COLORS["success"],
+        COLORS["warning"],
+        COLORS["purple"],
+        COLORS["teal"],
+    ]
+
+    # Base layout configuration
+    BASE_LAYOUT = {
+        "font": {
+            "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            "size": 14,
+            "color": "#1f2937"
+        },
+        "plot_bgcolor": "#ffffff",
+        "paper_bgcolor": "#ffffff",
+        "hovermode": "x unified",
+        "showlegend": True,
+        "legend": {
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.15,
+            "xanchor": "center",
+            "x": 0.5,
+            "font": {"size": 12},
+            "bgcolor": "rgba(255,255,255,0.8)",
+            "bordercolor": "#e5e7eb",
+            "borderwidth": 1
+        },
+        "margin": {"l": 80, "r": 40, "t": 100, "b": 100},
+        "xaxis": {
+            "showgrid": True,
+            "gridcolor": "#e5e7eb",
+            "zeroline": False,
+            "title": {
+                "font": {"size": 13, "color": "#4b5563"},
+                "standoff": 15
+            }
+        },
+        "yaxis": {
+            "showgrid": True,
+            "gridcolor": "#e5e7eb",
+            "zeroline": False,
+            "title": {
+                "font": {"size": 13, "color": "#4b5563"},
+                "standoff": 15
+            }
+        }
+    }
+
+    @staticmethod
+    def _select_chart_type(data: pd.DataFrame, intent: str, columns: List[str]) -> str:
+        """
+        Intelligently select chart type based on intent and data characteristics.
+
+        Args:
+            data: DataFrame with chart data
+            intent: Query intent
+            columns: Column names in the data
+
+        Returns:
+            Chart type string ("line", "bar", "scatter", "comparison")
+        """
+        # Convert intent to string for comparison (handles both string and enum)
+        intent_str = str(intent)
+
+        # TREND_ANALYSIS -> Line chart (time series)
+        if "TREND_ANALYSIS" in intent_str:
+            return "line"
+
+        # PLAYER_COMPARISON or TEAM_ANALYSIS with multiple teams -> Comparison bar chart
+        if "PLAYER_COMPARISON" in intent_str:
+            # If we have multiple numeric columns, use grouped bar (comparison)
+            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
+            if len(numeric_cols) > 2:
+                return "comparison"
+            return "bar"
+
+        # TEAM_ANALYSIS -> Check if it's time series or single value
+        if "TEAM_ANALYSIS" in intent_str:
+            # If we have season/round column and multiple rows, use line
+            if ('season' in columns or 'round' in columns) and len(data) > 5:
+                return "line"
+            # Otherwise use bar
+            return "bar"
+
+        # Default: Use data shape to decide
+        # Many rows (>5) with time dimension -> line chart
+        if len(data) > 5 and any(col in columns for col in ['season', 'round', 'match_date', 'year']):
+            return "line"
+
+        # Few rows (<= 5) -> bar chart for comparison
+        if len(data) <= 5:
+            return "bar"
+
+        # Default fallback
+        return "bar"
+
+    @staticmethod
+    def generate_chart(
+        data: pd.DataFrame,
+        chart_type: str,
+        params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate a Plotly chart specification.
+
+        Args:
+            data: DataFrame with chart data
+            chart_type: Type of chart ("line", "bar", "scatter", "heatmap", "pie")
+            params: Optional parameters (title, x_col, y_col, group_col, etc.)
+
+        Returns:
+            Plotly chart specification (JSON-serializable dict)
+        """
+        if params is None:
+            params = {}
+
+        try:
+            if chart_type == "line":
+                return PlotlyBuilder._build_line_chart(data, params)
+
+            elif chart_type == "bar":
+                return PlotlyBuilder._build_bar_chart(data, params)
+
+            elif chart_type == "scatter":
+                return PlotlyBuilder._build_scatter_chart(data, params)
+
+            elif chart_type == "comparison":
+                return PlotlyBuilder._build_comparison_chart(data, params)
+
+            elif chart_type == "trend":
+                return PlotlyBuilder._build_trend_chart(data, params)
+
+            else:
+                logger.warning(f"Unknown chart type: {chart_type}, defaulting to bar chart")
+                return PlotlyBuilder._build_bar_chart(data, params)
+
+        except Exception as e:
+            logger.error(f"Error generating chart: {e}")
+            return {
+                "error": str(e),
+                "data": [],
+                "layout": PlotlyBuilder.BASE_LAYOUT
+            }
+
+    @staticmethod
+    def _build_line_chart(data: pd.DataFrame, params: Dict) -> Dict:
+        """Build a line chart for trends over time."""
+        x_col = params.get("x_col", data.columns[0])
+        y_col = params.get("y_col", data.columns[1])
+        group_col = params.get("group_col")
+        title = params.get("title", "Trend Over Time")
+
+        # If x_col is 'round', try to convert to numeric for proper sorting
+        # Handle both numeric rounds (0, 1, 2...) and finals ("Qualifying Final", etc.)
+        if x_col == 'round' and 'match_date' in data.columns:
+            # Use match_date for sorting, but keep round for display
+            data = data.sort_values('match_date').reset_index(drop=True)
+            # Create a numeric index for X-axis to maintain order
+            data['_plot_order'] = range(len(data))
+            x_col_for_plot = '_plot_order'
+            # Store round labels for custom tick labels
+            round_labels = data['round'].tolist()
+        else:
+            x_col_for_plot = x_col
+            round_labels = None
+
+        traces = []
+
+        if group_col and group_col in data.columns:
+            # Multiple lines (one per group)
+            for i, group in enumerate(data[group_col].unique()):
+                group_data = data[data[group_col] == group].copy()
+                traces.append(go.Scatter(
+                    x=group_data[x_col_for_plot].tolist(),
+                    y=group_data[y_col].tolist(),
+                    mode="lines+markers",
+                    name=str(group),
+                    line={"color": PlotlyBuilder.COLOR_SEQUENCE[i % len(PlotlyBuilder.COLOR_SEQUENCE)], "width": 3},
+                    marker={"size": 8}
+                ))
+        else:
+            # Single line
+            traces.append(go.Scatter(
+                x=data[x_col_for_plot].tolist(),
+                y=data[y_col].tolist(),
+                mode="lines+markers",
+                name=y_col,
+                line={"color": PlotlyBuilder.COLORS["primary"], "width": 3},
+                marker={"size": 8}
+            ))
+
+        layout = PlotlyBuilder.BASE_LAYOUT.copy()
+        layout["title"] = {
+            "text": title,
+            "x": 0.5,
+            "xanchor": "center",
+            "font": {"size": 18},
+            "pad": {"b": 20}
+        }
+        layout["xaxis"]["title"] = {"text": ChartHelper.humanize_column_name(x_col)}
+        layout["yaxis"]["title"] = {"text": ChartHelper.humanize_column_name(y_col)}
+
+        # If we created custom ordering, set tick labels to show round names
+        if round_labels is not None:
+            layout["xaxis"]["tickmode"] = "array"
+            layout["xaxis"]["tickvals"] = list(range(len(round_labels)))
+            layout["xaxis"]["ticktext"] = round_labels
+
+        # Create figure and convert to JSON-serializable dict
+        fig = go.Figure(data=traces, layout=layout)
+        return fig.to_dict()
+
+    @staticmethod
+    def _build_bar_chart(data: pd.DataFrame, params: Dict) -> Dict:
+        """Build a bar chart for comparisons."""
+        x_col = params.get("x_col", data.columns[0])
+        y_col = params.get("y_col", data.columns[1])
+        title = params.get("title", "Comparison")
+        orientation = params.get("orientation", "v")  # v or h
+
+        traces = [go.Bar(
+            x=data[x_col].tolist() if orientation == "v" else data[y_col].tolist(),
+            y=data[y_col].tolist() if orientation == "v" else data[x_col].tolist(),
+            orientation=orientation,
+            marker={"color": PlotlyBuilder.COLORS["primary"]},
+            text=data[y_col].tolist() if orientation == "v" else data[x_col].tolist(),
+            textposition="outside"
+        )]
+
+        layout = PlotlyBuilder.BASE_LAYOUT.copy()
+        layout["title"] = {
+            "text": title,
+            "x": 0.5,
+            "xanchor": "center",
+            "font": {"size": 18},
+            "pad": {"b": 20}
+        }
+        layout["xaxis"]["title"] = {"text": ChartHelper.humanize_column_name(x_col if orientation == "v" else y_col)}
+        layout["yaxis"]["title"] = {"text": ChartHelper.humanize_column_name(y_col if orientation == "v" else x_col)}
+        layout["showlegend"] = False
+
+        # Create figure and convert to JSON-serializable dict
+        fig = go.Figure(data=traces, layout=layout)
+        return fig.to_dict()
+
+    @staticmethod
+    def _build_scatter_chart(data: pd.DataFrame, params: Dict) -> Dict:
+        """Build a scatter plot for correlations."""
+        x_col = params.get("x_col", data.columns[0])
+        y_col = params.get("y_col", data.columns[1])
+        title = params.get("title", "Correlation Analysis")
+        group_col = params.get("group_col")
+
+        traces = []
+
+        if group_col and group_col in data.columns:
+            # Color by group
+            for i, group in enumerate(data[group_col].unique()):
+                group_data = data[data[group_col] == group]
+                traces.append(go.Scatter(
+                    x=group_data[x_col].tolist(),
+                    y=group_data[y_col].tolist(),
+                    mode="markers",
+                    name=str(group),
+                    marker={
+                        "color": PlotlyBuilder.COLOR_SEQUENCE[i % len(PlotlyBuilder.COLOR_SEQUENCE)],
+                        "size": 10,
+                        "opacity": 0.7
+                    }
+                ))
+        else:
+            # Single scatter
+            traces.append(go.Scatter(
+                x=data[x_col].tolist(),
+                y=data[y_col].tolist(),
+                mode="markers",
+                marker={"color": PlotlyBuilder.COLORS["primary"], "size": 10, "opacity": 0.7}
+            ))
+
+        layout = PlotlyBuilder.BASE_LAYOUT.copy()
+        layout["title"] = {
+            "text": title,
+            "x": 0.5,
+            "xanchor": "center",
+            "font": {"size": 18},
+            "pad": {"b": 20}
+        }
+        layout["xaxis"]["title"] = {"text": ChartHelper.humanize_column_name(x_col)}
+        layout["yaxis"]["title"] = {"text": ChartHelper.humanize_column_name(y_col)}
+
+        # Create figure and convert to JSON-serializable dict
+        fig = go.Figure(data=traces, layout=layout)
+        return fig.to_dict()
+
+    @staticmethod
+    def _build_comparison_chart(data: pd.DataFrame, params: Dict) -> Dict:
+        """Build a grouped bar chart for comparing entities."""
+        group_col = params.get("group_col", data.columns[0])
+        metric_cols = params.get("metric_cols", data.select_dtypes(include=['number']).columns.tolist())
+        title = params.get("title", "Comparison")
+
+        traces = []
+
+        for i, metric in enumerate(metric_cols[:6]):  # Limit to 6 metrics for readability
+            traces.append(go.Bar(
+                x=data[group_col].tolist(),
+                y=data[metric].tolist(),
+                name=metric,
+                marker={"color": PlotlyBuilder.COLOR_SEQUENCE[i % len(PlotlyBuilder.COLOR_SEQUENCE)]}
+            ))
+
+        layout = PlotlyBuilder.BASE_LAYOUT.copy()
+        layout["title"] = {
+            "text": title,
+            "x": 0.5,
+            "xanchor": "center",
+            "font": {"size": 18},
+            "pad": {"b": 20}
+        }
+        layout["barmode"] = "group"
+        layout["xaxis"]["title"] = {"text": ChartHelper.humanize_column_name(group_col)}
+        layout["yaxis"]["title"] = {"text": "Value"}
+
+        # Create figure and convert to JSON-serializable dict
+        fig = go.Figure(data=traces, layout=layout)
+        return fig.to_dict()
+
+    @staticmethod
+    def _build_trend_chart(data: pd.DataFrame, params: Dict) -> Dict:
+        """Build a line chart with trend analysis (moving average, etc.)."""
+        # For now, delegate to line chart (can enhance with moving averages later)
+        return PlotlyBuilder._build_line_chart(data, params)

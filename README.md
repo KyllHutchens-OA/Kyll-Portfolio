@@ -6,7 +6,7 @@
 
 This project showcases an AI agent that autonomously analyzes Australian Football League (AFL) statistics, performs multi-step reasoning, and provides insights through natural language conversation with embedded interactive visualizations.
 
-**Tech Stack**: Flask (backend) + React (frontend) + LangGraph (agent framework) + Supabase (PostgreSQL) + Plotly (visualizations)
+**Tech Stack**: Flask (backend) + React (frontend) + LangGraph (agent framework) + GPT-5-mini + Supabase (PostgreSQL) + Plotly (visualizations)
 
 ## Features
 
@@ -14,15 +14,17 @@ This project showcases an AI agent that autonomously analyzes Australian Footbal
 - **Multi-Step Reasoning**: Agent autonomously plans and executes complex analyses
 - **Interactive Visualizations**: Hex-quality Plotly charts embedded in chat
 - **Real-time Streaming**: See the agent's thinking process as it works
-- **5 Years of Data**: Historical AFL statistics from 2020-2024
+- **35 Years of Data**: Complete AFL match statistics from 1990-2025 (6,243 matches)
 
 ### Example Queries
 
+**Note**: Currently only match-level data is available. Player statistics pending ingestion.
+
 ```
-"Compare Patrick Cripps and Clayton Oliver's disposals this season"
+"Who won the 2025 grand final?"
+"Show me Richmond's win-loss record in 2022"
+"Which teams had the most wins in 2023?"
 "Show me Collingwood's scoring trend across 2024"
-"How has Max Gawn's hitout average changed from 2020 to 2024?"
-"Which teams had the most tackles in 2023?"
 ```
 
 ## Quick Start
@@ -164,17 +166,29 @@ Core tables:
 
 ## Roadmap
 
-### MVP (Current)
-- ✅ Historical data (2020-2024)
-- ✅ Basic statistical queries
-- ✅ Interactive visualizations
-- ✅ Chat interface with streaming
+### ✅ Completed (Weeks 1-3)
+- ✅ Historical data (1990-2025, 6,243 matches)
+- ✅ LangGraph agent workflow (UNDERSTAND → PLAN → EXECUTE → VISUALIZE → RESPOND)
+- ✅ GPT-4 text-to-SQL generation
+- ✅ SQL validation and security
+- ✅ Plotly visualization generator with Hex-quality theme
+- ✅ Flask API with WebSocket support
+- ✅ React frontend with real-time chat
+- ✅ Chart rendering with react-plotly.js
 
-### Phase 2 (Future)
+### ⏳ In Progress (Week 4)
+- 🔨 Add OPENAI_API_KEY to .env for testing
+- 📝 End-to-end testing with real queries
+- 📝 npm install for frontend dependencies
+
+### Phase 2 (Future Enhancements)
+- [ ] Player statistics ingestion (~13,000 players)
 - [ ] Advanced analytics (expected stats, form analysis)
-- [ ] Live 2025 season data (Squiggle API)
+- [ ] Streaming "thinking" updates through LangGraph workflow
+- [ ] Conversation history and memory
+- [ ] Chart export (download as PNG/SVG)
 - [ ] User authentication
-- [ ] Conversation history and sharing
+- [ ] Production deployment (Docker, hosting)
 
 ## Contributing
 
@@ -190,4 +204,4 @@ Built as a data science portfolio project showcasing modern AI agent development
 
 ---
 
-**Built with**: LangGraph • Flask • React • Supabase • Plotly
+**Built with**: LangGraph • GPT-5-mini • Flask • React • Supabase • Plotly
