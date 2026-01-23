@@ -18,6 +18,7 @@ from app.analytics.context_enrichment import ContextEnricher
 from app.analytics.statistics import EfficiencyCalculator
 from app.visualization import PlotlyBuilder
 from app.visualization.plotly_builder import ChartHelper
+from app.visualization.chart_selector import ChartSelector
 
 # Load environment variables
 load_dotenv()
@@ -494,70 +495,61 @@ User question: {state["user_query"]}"""
                 # Skip visualization - will go to respond node without chart
                 return state
 
-            # Auto-detect x and y columns
-            numeric_cols = data.select_dtypes(include=['number']).columns.tolist()
-            non_numeric_cols = data.select_dtypes(exclude=['number']).columns.tolist()
-            all_cols = data.columns.tolist()
+            # Use intelligent ChartSelector to determine optimal chart configuration
+            user_query = state.get("user_query", "")
 
-            # INTELLIGENT CHART TYPE SELECTION
-            chart_type = PlotlyBuilder._select_chart_type(data, intent, all_cols)
+            chart_config = ChartSelector.select_chart_configuration(
+                user_query=user_query,
+                data=data,
+                intent=str(intent),
+                entities=entities
+            )
 
-            params = {}
+            logger.info(f"ChartSelector recommendation: {chart_config.get('chart_type')} "
+                       f"(confidence: {chart_config.get('confidence', 'unknown')})")
+            logger.info(f"Reasoning: {chart_config.get('reasoning', 'N/A')}")
 
-            # Smart column detection based on common AFL data patterns
-            # Priority for X-axis:
-            # - For TREND queries: season > year > match_date > round
-            # - For PERFORMANCE queries: round > match_date > season
-            x_col = None
+            # Extract configuration
+            chart_type = chart_config.get("chart_type", "bar")
+            x_col = chart_config.get("x_col")
+            y_col = chart_config.get("y_col")
+            group_col = chart_config.get("group_col")
 
-            if intent == QueryIntent.TREND_ANALYSIS:
-                # Temporal queries prioritize time periods
-                if 'season' in all_cols:
-                    x_col = 'season'
-                elif 'year' in all_cols:
-                    x_col = 'year'
-                elif 'match_date' in all_cols:
-                    x_col = 'match_date'
-                elif 'round' in all_cols:
-                    x_col = 'round'
-                elif len(non_numeric_cols) > 0:
-                    x_col = non_numeric_cols[0]
+            # Handle multiple y columns (list) - use comparison chart or take first
+            if isinstance(y_col, list):
+                if len(y_col) > 1:
+                    # Multiple metrics - use comparison chart
+                    chart_type = "comparison"
+                    params = {
+                        "group_col": x_col,  # X becomes the grouping dimension
+                        "metric_cols": y_col  # Y columns become metrics to compare
+                    }
+                else:
+                    # Single metric in list
+                    y_col = y_col[0]
+                    params = {}
+                    if x_col:
+                        params["x_col"] = x_col
+                    if y_col:
+                        params["y_col"] = y_col
+                    if group_col:
+                        params["group_col"] = group_col
             else:
-                # Performance/single-season queries prioritize rounds
-                if 'round' in all_cols:
-                    x_col = 'round'
-                elif 'match_date' in all_cols:
-                    x_col = 'match_date'
-                elif 'season' in all_cols:
-                    x_col = 'season'
-                elif len(non_numeric_cols) > 0:
-                    x_col = non_numeric_cols[0]
-
-            # Priority for Y-axis: margin > team_score > wins > first numeric
-            y_col = None
-            if 'margin' in all_cols:
-                y_col = 'margin'
-            elif 'team_score' in all_cols:
-                y_col = 'team_score'
-            elif 'wins' in all_cols:
-                y_col = 'wins'
-            elif len(numeric_cols) > 0:
-                y_col = numeric_cols[0]
-
-            if x_col and y_col:
-                params["x_col"] = x_col
-                params["y_col"] = y_col
-
-                # Group by result (Win/Loss) if available
-                if 'result' in all_cols and chart_type == 'line':
-                    params["group_col"] = 'result'
+                # Single y column (string)
+                params = {}
+                if x_col:
+                    params["x_col"] = x_col
+                if y_col:
+                    params["y_col"] = y_col
+                if group_col:
+                    params["group_col"] = group_col
 
             # Generate smart title
             params["title"] = ChartHelper.generate_chart_title(
                 intent=str(intent),
                 entities=entities,
                 metrics=entities.get("metrics", []),
-                data_cols=all_cols
+                data_cols=data.columns.tolist()
             )
 
             # Generate chart
