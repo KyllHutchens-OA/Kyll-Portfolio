@@ -10,6 +10,7 @@ from enum import Enum
 class WorkflowStep(str, Enum):
     """Agent workflow steps."""
     UNDERSTAND = "understand"
+    ANALYZE_DEPTH = "analyze_depth"
     PLAN = "plan"
     EXECUTE = "execute"
     VISUALIZE = "visualize"
@@ -51,6 +52,13 @@ class AgentState(TypedDict, total=False):
     requires_visualization: bool
     chart_type: Optional[str]  # "line", "bar", "scatter", etc.
     fallback_approach: Optional[str]  # Simplified approach if complex query
+
+    # Enhanced statistics
+    analysis_mode: Optional[str]  # "summary" or "in_depth"
+    analysis_types: List[str]  # ["average", "trend", "comparison", "rank"]
+    context_insights: Dict[str, Any]  # Historical context, form analysis, venue splits
+    data_quality: Dict[str, Any]  # Sample size, confidence, warnings
+    stats_summary: Dict[str, Any]  # Formatted statistics for GPT consumption
 
     # Execution phase
     sql_query: Optional[str]

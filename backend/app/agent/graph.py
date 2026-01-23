@@ -1,7 +1,7 @@
 """
 AFL Analytics Agent - LangGraph Workflow
 
-Defines the agent workflow: UNDERSTAND → PLAN → EXECUTE → RESPOND
+Defines the agent workflow: UNDERSTAND → ANALYZE_DEPTH → PLAN → EXECUTE → VISUALIZE → RESPOND
 """
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
@@ -32,9 +32,11 @@ class AFLAnalyticsAgent:
 
     Workflow:
     1. UNDERSTAND - Parse user query, extract intent and entities
-    2. PLAN - Determine analysis steps required
-    3. EXECUTE - Run SQL queries and compute statistics
-    4. RESPOND - Format natural language response
+    2. ANALYZE_DEPTH - Determine summary vs in-depth analysis mode
+    3. PLAN - Determine analysis steps required
+    4. EXECUTE - Run SQL queries and compute statistics
+    5. VISUALIZE - Generate chart specifications (if needed)
+    6. RESPOND - Format natural language response
     """
 
     def __init__(self):
@@ -46,13 +48,15 @@ class AFLAnalyticsAgent:
 
         # Add nodes
         workflow.add_node("understand", self.understand_node)
+        workflow.add_node("analyze_depth", self.analyze_depth_node)
         workflow.add_node("plan", self.plan_node)
         workflow.add_node("execute", self.execute_node)
         workflow.add_node("visualize", self.visualize_node)
         workflow.add_node("respond", self.respond_node)
 
         # Add edges
-        workflow.add_edge("understand", "plan")
+        workflow.add_edge("understand", "analyze_depth")
+        workflow.add_edge("analyze_depth", "plan")
         workflow.add_edge("plan", "execute")
 
         # Conditional edge: visualize if needed, otherwise go to respond
@@ -94,7 +98,11 @@ class AFLAnalyticsAgent:
             sql_validated=False,
             statistical_analysis={},
             errors=[],
-            current_step=WorkflowStep.UNDERSTAND
+            current_step=WorkflowStep.UNDERSTAND,
+            analysis_types=[],
+            context_insights={},
+            data_quality={},
+            stats_summary={}
         )
 
         final_state = await self.graph.ainvoke(initial_state)
@@ -188,6 +196,101 @@ User question: {state["user_query"]}"""
         except Exception as e:
             logger.error(f"Error in UNDERSTAND node: {e}")
             state["errors"].append(f"Understanding error: {str(e)}")
+
+        return state
+
+    async def analyze_depth_node(self, state: AgentState) -> AgentState:
+        """
+        ANALYZE_DEPTH node: Determine summary vs in-depth analysis mode.
+
+        Scoring system:
+        - Intent type: TREND_ANALYSIS +3, PLAYER_COMPARISON +3, TEAM_ANALYSIS +2
+        - Entity count: ≥2 teams/players +2
+        - Keywords: compare, vs, over time, trend, historical, analyze +1 each
+        - Negative keywords: who won, what was -2 each
+
+        Threshold: score ≥3 → in_depth, else summary
+
+        Updates:
+        - analysis_mode ("summary" or "in_depth")
+        - analysis_types (list of analysis types to run)
+        - thinking_message
+        """
+        state["current_step"] = WorkflowStep.ANALYZE_DEPTH
+        state["thinking_message"] = "🎯 Analyzing query complexity..."
+
+        logger.info(f"ANALYZE_DEPTH: Determining analysis mode for intent={state.get('intent')}")
+
+        score = 0
+        query_lower = state["user_query"].lower()
+        intent = state.get("intent")
+        entities = state.get("entities", {})
+
+        # Score by intent
+        if intent == QueryIntent.TREND_ANALYSIS:
+            score += 3
+        elif intent == QueryIntent.PLAYER_COMPARISON:
+            score += 3
+        elif intent == QueryIntent.TEAM_ANALYSIS:
+            score += 2
+
+        # Score by entity count
+        teams = entities.get("teams", [])
+        players = entities.get("players", [])
+        total_entities = len(teams) + len(players)
+        if total_entities >= 2:
+            score += 2
+
+        # Positive keywords
+        positive_keywords = [
+            "compare", "vs", "versus", "over time", "across time",
+            "trend", "historical", "analyze", "deep dive", "tell me about",
+            "performance", "evolution", "progression", "trajectory"
+        ]
+        for keyword in positive_keywords:
+            if keyword in query_lower:
+                score += 1
+
+        # Negative keywords (simple questions)
+        negative_keywords = [
+            "who won", "what was", "when did", "how many",
+            "which team", "what score"
+        ]
+        for keyword in negative_keywords:
+            if keyword in query_lower:
+                score -= 2
+
+        # Determine mode
+        analysis_mode = "in_depth" if score >= 3 else "summary"
+
+        # Determine analysis types based on mode
+        if analysis_mode == "in_depth":
+            analysis_types = ["average"]
+
+            # Add trend analysis for temporal queries
+            if intent == QueryIntent.TREND_ANALYSIS or any(
+                kw in query_lower for kw in ["over time", "across time", "trend", "historical", "evolution"]
+            ):
+                analysis_types.append("trend")
+
+            # Add comparison for multi-entity queries
+            if intent == QueryIntent.PLAYER_COMPARISON or total_entities >= 2:
+                analysis_types.append("comparison")
+
+            # Add rankings for competitive analysis
+            if any(kw in query_lower for kw in ["best", "worst", "top", "rank", "leader"]):
+                analysis_types.append("rank")
+        else:
+            # Summary mode: just averages
+            analysis_types = ["average"]
+
+        state["analysis_mode"] = analysis_mode
+        state["analysis_types"] = analysis_types
+
+        logger.info(
+            f"Analysis mode: {analysis_mode} (score={score}), "
+            f"types={analysis_types}"
+        )
 
         return state
 
@@ -297,13 +400,27 @@ User question: {state["user_query"]}"""
             # Step 3: Compute statistics if needed
             if len(db_result["data"]) > 0 and state.get("intent") != QueryIntent.SIMPLE_STAT:
                 state["thinking_message"] = "📊 Calculating statistics..."
-                stats_result = StatisticsTool.compute_statistics(
-                    db_result["data"],
-                    analysis_type="average"
-                )
 
-                if stats_result["success"]:
-                    state["statistical_analysis"] = stats_result
+                # Get analysis types from analyze_depth node
+                analysis_types = state.get("analysis_types", ["average"])
+                combined_stats = {"success": True, "mode": state.get("analysis_mode", "summary")}
+
+                # Run all requested analysis types
+                for analysis_type in analysis_types:
+                    logger.info(f"Running {analysis_type} analysis")
+                    stats_result = StatisticsTool.compute_statistics(
+                        db_result["data"],
+                        analysis_type=analysis_type,
+                        params={}
+                    )
+
+                    if stats_result.get("success"):
+                        combined_stats[analysis_type] = stats_result
+                    else:
+                        logger.warning(f"{analysis_type} analysis failed: {stats_result.get('error')}")
+
+                state["statistical_analysis"] = combined_stats
+                logger.info(f"Computed statistics for {len(analysis_types)} analysis types")
 
         except Exception as e:
             logger.error(f"Error in EXECUTE node: {e}")
@@ -421,6 +538,105 @@ User question: {state["user_query"]}"""
 
         return state
 
+    def _format_stats_for_gpt(self, stats: Dict[str, Any]) -> str:
+        """
+        Format statistical analysis into readable text for GPT consumption.
+
+        Args:
+            stats: Statistical analysis dictionary from execute_node
+
+        Returns:
+            Formatted string with statistical insights
+        """
+        if not stats or not stats.get("success"):
+            return "No statistical analysis available."
+
+        parts = []
+        mode = stats.get("mode", "summary")
+
+        parts.append(f"Analysis Mode: {mode}")
+
+        # Format averages
+        if "average" in stats:
+            avg_stats = stats["average"]
+            if avg_stats.get("success") and "averages" in avg_stats:
+                parts.append("\n**Basic Statistics:**")
+                for metric, values in list(avg_stats["averages"].items())[:5]:  # Limit to 5 metrics
+                    parts.append(
+                        f"- {metric}: mean={values['mean']:.2f}, "
+                        f"median={values['median']:.2f}, "
+                        f"range=[{values['min']:.2f}, {values['max']:.2f}]"
+                    )
+
+        # Format trends
+        if "trend" in stats:
+            trend_stats = stats["trend"]
+            if trend_stats.get("success"):
+                parts.append("\n**Trend Analysis:**")
+                parts.append(f"- Summary: {trend_stats.get('summary', 'N/A')}")
+
+                direction = trend_stats.get("direction", {})
+                parts.append(
+                    f"- Direction: {direction.get('classification', 'unknown')} "
+                    f"(p={direction.get('p_value', 'N/A')}, R²={direction.get('r_squared', 'N/A')})"
+                )
+
+                momentum = trend_stats.get("momentum", {})
+                if momentum.get("classification"):
+                    recent_avg = momentum.get('recent_avg')
+                    historical_avg = momentum.get('historical_avg')
+
+                    recent_str = f"{recent_avg:.2f}" if recent_avg is not None else "N/A"
+                    historical_str = f"{historical_avg:.2f}" if historical_avg is not None else "N/A"
+
+                    parts.append(
+                        f"- Momentum: {momentum['classification']} "
+                        f"(recent avg: {recent_str}, historical avg: {historical_str})"
+                    )
+
+                change = trend_stats.get("change", {})
+                if change.get("overall_percent") is not None:
+                    parts.append(f"- Overall change: {change['overall_percent']:+.2f}%")
+
+                parts.append(f"- Confidence: {trend_stats.get('confidence', 'unknown')}")
+
+        # Format comparison
+        if "comparison" in stats:
+            comp_stats = stats["comparison"]
+            if comp_stats.get("success"):
+                parts.append("\n**Comparison Analysis:**")
+                parts.append(f"- Comparing {comp_stats.get('entity_count', 0)} entities")
+                parts.append(f"- Summary: {comp_stats.get('summary', 'N/A')}")
+
+                # Show top leaders
+                leaders = comp_stats.get("leaders", {})
+                if leaders:
+                    parts.append("- Leaders:")
+                    for metric, leader_info in list(leaders.items())[:3]:  # Top 3
+                        parts.append(
+                            f"  * {metric}: {leader_info.get('entity')} "
+                            f"({leader_info.get('value', 'N/A')})"
+                        )
+
+        # Format rankings
+        if "rank" in stats:
+            rank_stats = stats["rank"]
+            if rank_stats.get("success"):
+                parts.append("\n**Rankings:**")
+                parts.append(f"- Summary: {rank_stats.get('summary', 'N/A')}")
+
+                # Show top 3
+                top_3 = rank_stats.get("top_3", [])
+                if top_3:
+                    parts.append("- Top 3:")
+                    for item in top_3:
+                        parts.append(
+                            f"  {item['rank']}. {item['entity']}: {item['value']} "
+                            f"({item['percentile']}th percentile)"
+                        )
+
+        return "\n".join(parts)
+
     async def respond_node(self, state: AgentState) -> AgentState:
         """
         RESPOND node: Format natural language response.
@@ -480,6 +696,9 @@ User question: {state["user_query"]}"""
                 state["confidence"] = 0.3
                 return state
 
+            # Format statistics for GPT consumption
+            stats_summary = self._format_stats_for_gpt(state.get("statistical_analysis", {}))
+
             # Generate response using GPT-5-nano (Responses API)
             response = client.responses.create(
                 model="gpt-5-nano",
@@ -492,10 +711,12 @@ User question: {state["user_query"]}"""
                                 "text": f"""You are an AFL analytics expert. Generate a natural language summary of the query results.
 
 Guidelines:
-- Be concise but informative
+- Be concise but insightful
 - Use Australian football terminology correctly
-- Include specific numbers and statistics
-- If the data shows interesting patterns, mention them
+- Include specific numbers from both query results AND statistical insights
+- Highlight patterns, trends, and meaningful insights from the statistical analysis
+- If confidence is low or sample size is small, mention it
+- If analysis mode is "in_depth", provide richer context and deeper insights
 - Never mention SQL, databases, or technical details
 - Write in a friendly, conversational tone
 
@@ -504,7 +725,10 @@ User asked: {state['user_query']}
 Query results:
 {state['query_results'].to_string() if len(state['query_results']) < 20 else state['query_results'].head(10).to_string()}
 
-Generate a natural language summary:"""
+Statistical Insights:
+{stats_summary}
+
+Generate a comprehensive summary using these insights:"""
                             }
                         ]
                     }
