@@ -731,14 +731,8 @@ User question: {state["user_query"]}"""
                             f"Port Adelaide, Richmond, St Kilda, Sydney, West Coast, Western Bulldogs"
                         )
 
-                # Check if query asked for player stats
-                if "player" in raw_query.lower() or "stats" in raw_query.lower():
-                    suggestions.append(
-                        "Note: Player statistics are not yet available - only match-level data (1990-2025) is currently loaded."
-                    )
-
                 suggestion_text = " ".join(suggestions) if suggestions else (
-                    "Note: Player statistics are not yet available - only match-level data (1990-2025) is currently loaded."
+                    "Try rephrasing your question or check that team/player names are correct."
                 )
 
                 state["natural_language_summary"] = (

@@ -79,7 +79,7 @@ class QueryBuilder:
 - away_q4_goals, away_q4_behinds (INTEGER) - Quarter 4 scoring
 - created_at, updated_at (TIMESTAMP)
 
-### players (currently empty - will be populated in future)
+### players
 - id (INTEGER, PRIMARY KEY)
 - name (VARCHAR)
 - team_id (INTEGER, FOREIGN KEY -> teams.id)
@@ -87,8 +87,9 @@ class QueryBuilder:
 - height (INTEGER) - in cm
 - weight (INTEGER) - in kg
 - debut_year (INTEGER)
+- created_at, updated_at (TIMESTAMP)
 
-### player_stats (currently empty - will be populated in future)
+### player_stats
 - match_id (INTEGER, FOREIGN KEY -> matches.id)
 - player_id (INTEGER, FOREIGN KEY -> players.id)
 - disposals (INTEGER)
@@ -98,6 +99,20 @@ class QueryBuilder:
 - tackles (INTEGER)
 - goals (INTEGER)
 - behinds (INTEGER)
+- hitouts (INTEGER)
+- clearances (INTEGER)
+- inside_50s (INTEGER)
+- rebound_50s (INTEGER)
+- contested_possessions (INTEGER)
+- uncontested_possessions (INTEGER)
+- contested_marks (INTEGER)
+- marks_inside_50 (INTEGER)
+- one_percenters (INTEGER)
+- clangers (INTEGER)
+- free_kicks_for (INTEGER)
+- free_kicks_against (INTEGER)
+- brownlow_votes (INTEGER)
+- time_on_ground_pct (FLOAT)
 
 ### team_stats (currently empty - will be populated in future)
 - match_id (INTEGER, FOREIGN KEY -> matches.id)
@@ -108,10 +123,13 @@ class QueryBuilder:
 - tackles (INTEGER)
 
 ## Important Notes
-- **Data Availability**: Currently only match-level data (1990-2025) is available. Player stats are not yet ingested.
+- **Data Availability**:
+  * Match-level data: 1990-2025 (6,000+ matches)
+  * Player statistics: 12,615 players with 230,000+ match-level stats
 - **Team Names**: Use the teams table to get correct team names and IDs
 - **Finals**: Finals rounds have string names like "Qualifying Final", "Grand Final"
 - **Scoring**: home_score and away_score are total points (goals × 6 + behinds)
+- **Player Queries**: Join players and player_stats with matches to get per-match player performance
 """
 
     SYSTEM_PROMPT = """You are an expert SQL query generator for an AFL (Australian Football League) database.
@@ -128,7 +146,7 @@ Guidelines:
 7. Limit results to reasonable amounts (use LIMIT when appropriate)
 8. CRITICAL: Use EXACT team names from the schema (e.g., "Adelaide" NOT "Adelaide Crows", "Geelong" NOT "Geelong Cats")
 9. Handle team names case-insensitively with ILIKE, but use the correct base name
-10. Remember: only matches data is currently available (no player stats yet)
+10. Player queries: Join players and player_stats tables with matches to get player performance data
 11. NEVER use CROSS JOIN - it creates a Cartesian product and returns wrong results
 12. CRITICAL: When using GROUP BY, ALL non-aggregated columns in SELECT must appear in GROUP BY clause
 13. For win/loss ratios, use direct aggregation without subqueries when possible

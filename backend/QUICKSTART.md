@@ -95,9 +95,10 @@ Open http://localhost:3000 and chat with the agent!
 - "Which teams had the most wins in 2023?"
 - "How many matches did Collingwood win in 2022?"
 
-**Player Queries** (not yet supported - player data pending):
-- "How many disposals did Patrick Cripps average in 2024?" ❌
-- "Compare Clayton Oliver and Marcus Bontempelli" ❌
+**Player Queries** (now supported):
+- "How many disposals did Patrick Cripps average in 2024?"
+- "Compare Clayton Oliver and Marcus Bontempelli"
+- "Who are the top 5 goal scorers in 2024?"
 
 ## Architecture
 
@@ -122,8 +123,9 @@ User Query → WebSocket → LangGraph Agent → GPT-4 → SQL → Database → 
 - Verify Supabase connection is active
 
 ### "Agent returns no results"
-- Remember: only match-level data is available (1990-2025)
-- Player statistics haven't been ingested yet
+- Verify the team or player name is spelled correctly (use exact names: "Richmond" not "Richmond Tigers")
+- Check the year range - match data: 1990-2025, player stats: 2012-2025
+- Try rephrasing your question to be more specific
 
 ## Development
 
