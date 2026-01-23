@@ -738,6 +738,7 @@ User question: {state["user_query"]}"""
 
             # Check if ALL columns are NULL (indicates no data for this query)
             all_null = data.isnull().all().all() if len(data) > 0 else False
+            logger.info(f"NULL check: len(data)={len(data)}, all_null={all_null}, data=\n{data}")
 
             if all_null:
                 # All columns are NULL - no data exists for this query
@@ -752,8 +753,8 @@ User question: {state["user_query"]}"""
 
                     state["natural_language_summary"] = (
                         f"I couldn't find any data for {player_name} in {season}. "
-                        f"Player statistics are available for seasons 2012-2023 and 2025. "
-                        f"Try asking about a different season or player."
+                        f"Player statistics are available for most seasons from 1990-2023 (excluding 1994, 2017, 2024) "
+                        f"and partial 2025 data. Try asking about a different season or player."
                     )
                 else:
                     state["natural_language_summary"] = (
