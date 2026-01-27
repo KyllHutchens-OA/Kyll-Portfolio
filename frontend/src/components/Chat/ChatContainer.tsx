@@ -53,31 +53,34 @@ const ChatContainer: React.FC = () => {
         )}
 
         {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+          <div key={message.id}>
+            {/* Message bubble */}
             <div
-              className={`max-w-3xl rounded-lg px-4 py-3 ${
-                message.type === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="whitespace-pre-wrap">{message.text}</div>
+              <div
+                className={`max-w-3xl rounded-lg px-4 py-3 ${
+                  message.type === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-900'
+                }`}
+              >
+                <div className="whitespace-pre-wrap">{message.text}</div>
 
-              {message.type === 'agent' && message.visualization && (
-                <div className="mt-4">
-                  <ChartRenderer spec={message.visualization} />
-                </div>
-              )}
-
-              {message.type === 'agent' && message.sources && message.sources.length > 0 && (
-                <div className="mt-2 text-xs text-gray-600 border-t border-gray-300 pt-2">
-                  Sources: {message.sources.join(', ')}
-                </div>
-              )}
+                {message.type === 'agent' && message.sources && message.sources.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-600 border-t border-gray-300 pt-2">
+                    Sources: {message.sources.join(', ')}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Chart - full width outside message bubble */}
+            {message.type === 'agent' && message.visualization && (
+              <div className="w-full mt-4 mb-2">
+                <ChartRenderer spec={message.visualization} />
+              </div>
+            )}
           </div>
         ))}
 
