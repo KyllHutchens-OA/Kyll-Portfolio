@@ -20,6 +20,27 @@ class DataPreprocessor:
     SPARSE_RANGE_THRESHOLD = 5
     MIN_MOVING_AVG_POINTS = 5
 
+    # Count/discrete metric names (should use bar charts, not moving averages)
+    COUNT_METRICS = {
+        'goals', 'behinds', 'goal', 'behind', 'kicks', 'handballs', 'disposals',
+        'marks', 'tackles', 'hitouts', 'clearances', 'rebounds', 'inside_50s',
+        'clangers', 'turnovers', 'intercepts', 'score_involvements',
+        'metres_gained', 'bounces', 'goals_assists', 'goal_assists'
+    }
+
+    @staticmethod
+    def is_count_metric(y_col: str) -> bool:
+        """
+        Determine if a metric is a discrete count (goals, disposals, etc.)
+
+        Count metrics should:
+        - Use bar charts instead of line charts
+        - Not show moving averages (fractional values are meaningless)
+        - Always start y-axis at 0
+        """
+        y_col_lower = y_col.lower().strip()
+        return y_col_lower in DataPreprocessor.COUNT_METRICS
+
     @staticmethod
     def preprocess_for_chart(
         data: pd.DataFrame,
@@ -48,8 +69,12 @@ class DataPreprocessor:
         params = params or {}
         processed_data = data.copy()
 
+        # Detect if this is a count metric (goals, disposals, etc.)
+        is_count = DataPreprocessor.is_count_metric(y_col)
+
         # Analyze data characteristics
         metadata = DataPreprocessor._analyze_data(processed_data, x_col, y_col, chart_type)
+        metadata["is_count_metric"] = is_count
 
         # Generate annotations based on analysis
         annotations = DataPreprocessor._generate_annotations(
@@ -61,8 +86,9 @@ class DataPreprocessor:
             processed_data, y_col, metadata
         )
 
-        # Add moving average if recommended
-        if recommendations.get("show_moving_avg") and len(processed_data) >= DataPreprocessor.MIN_MOVING_AVG_POINTS:
+        # IMPORTANT: Don't add moving average for count metrics (goals, disposals)
+        # Fractional counts (1.5 goals) are meaningless and confusing
+        if not is_count and recommendations.get("show_moving_avg") and len(processed_data) >= DataPreprocessor.MIN_MOVING_AVG_POINTS:
             processed_data['moving_avg_3'] = processed_data[y_col].rolling(
                 window=3, min_periods=1, center=False
             ).mean()
@@ -204,9 +230,11 @@ class DataPreprocessor:
     ) -> List[Dict[str, Any]]:
         """Generate Plotly annotations based on data analysis"""
         annotations = []
+        is_count = metadata.get("is_count_metric", False)
 
         # Missing rounds annotation
-        if metadata.get("has_gaps") and metadata.get("missing_points"):
+        # Skip for bar charts and count metrics - gaps are visually obvious
+        if not is_count and chart_type != "bar" and metadata.get("has_gaps") and metadata.get("missing_points"):
             missing = metadata["missing_points"]
 
             # Format missing rounds (group consecutive ones)
@@ -294,19 +322,32 @@ class DataPreprocessor:
         metadata: Dict
     ) -> Dict[str, Any]:
         """Generate recommendations for chart enhancements"""
+        is_count = metadata.get("is_count_metric", False)
+
         recommendations = {
             "show_moving_avg": False,
             "show_peaks": False,
-            "suggested_aggregation": None
+            "suggested_aggregation": None,
+            "prefer_bar_chart": False
         }
 
-        # Recommend moving average for sparse data
-        if metadata.get("is_sparse") and len(data) >= DataPreprocessor.MIN_MOVING_AVG_POINTS:
-            recommendations["show_moving_avg"] = True
+        # For count metrics (goals, disposals, etc.):
+        # - Prefer bar charts over line charts
+        # - Don't show moving averages (fractional counts are meaningless)
+        # - Always show peaks (even 2 goals is notable)
+        if is_count:
+            recommendations["prefer_bar_chart"] = True
+            recommendations["show_moving_avg"] = False  # Never for counts
+            recommendations["show_peaks"] = len(data) >= 3  # Show peaks if we have data
+        else:
+            # For continuous metrics (percentages, averages, etc.):
+            # Recommend moving average for sparse data
+            if metadata.get("is_sparse") and len(data) >= DataPreprocessor.MIN_MOVING_AVG_POINTS:
+                recommendations["show_moving_avg"] = True
 
-        # Recommend peak/trough annotations for data with variation
-        if metadata.get("variance_level") in ["medium", "high"] and len(data) >= 3:
-            recommendations["show_peaks"] = True
+            # Recommend peak/trough annotations for data with variation
+            if metadata.get("variance_level") in ["medium", "high"] and len(data) >= 3:
+                recommendations["show_peaks"] = True
 
         return recommendations
 

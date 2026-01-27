@@ -793,6 +793,11 @@ Current user question: {state["user_query"]}"""
                 logger.info(f"Layout optimized: height={layout_config.get('height')}, "
                            f"x_rotation={layout_config.get('xaxis', {}).get('tickangle')}")
 
+                # OVERRIDE: If preprocessor recommends bar chart (e.g., for count metrics), use it
+                if recommendations.get("prefer_bar_chart") and chart_type == "line":
+                    logger.info(f"Overriding chart type: line → bar (count metric detected: {y_col})")
+                    chart_type = "bar"
+
             # Generate smart title
             params["title"] = ChartHelper.generate_chart_title(
                 intent=str(intent),

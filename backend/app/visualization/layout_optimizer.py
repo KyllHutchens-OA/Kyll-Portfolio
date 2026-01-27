@@ -180,7 +180,27 @@ class LayoutOptimizer:
         min_val = y_data.min()
         max_val = y_data.max()
         data_range = max_val - min_val
+        is_count = metadata.get("is_count_metric", False)
 
+        # For count metrics (goals, disposals), ALWAYS start at 0
+        if is_count:
+            # Add 20% padding above max for visual breathing room
+            padding = max(1, max_val * 0.2)  # At least 1 unit padding
+            range_max = float(max_val + padding)
+
+            config["range"] = [0.0, range_max]
+
+            # Set integer tick spacing for count data
+            if max_val <= 3:
+                config["dtick"] = 1  # Show every integer
+            elif max_val <= 10:
+                config["dtick"] = 2  # Show every 2nd integer
+            else:
+                config["dtick"] = 5  # Show every 5th integer
+
+            return config
+
+        # For continuous metrics (percentages, averages, etc.):
         # For sparse data or small ranges, zoom in with custom range
         variance = y_data.var() if len(y_data) > 1 else 0
         mean_val = y_data.mean()
