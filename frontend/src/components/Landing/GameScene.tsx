@@ -149,8 +149,8 @@ export const GameScene: React.FC = () => {
   const [currentFact, setCurrentFact] = useState<string | null>(null);
   const [factClickCount, setFactClickCount] = useState(0);
   const [shownFacts, setShownFacts] = useState<Set<number>>(new Set());
-  const jumpTimeoutRef = useRef<NodeJS.Timeout>();
-  const factTimeoutRef = useRef<NodeJS.Timeout>();
+  const jumpTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const factTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const navigationRef = useRef<string | null>(null);
 
   // Handle spacebar jump
