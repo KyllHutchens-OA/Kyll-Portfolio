@@ -47,3 +47,8 @@ sentry-sdk[flask]==1.39.1
 
 # Scheduling (for future updates)
 APScheduler==3.10.4
+
+# Production server
+gunicorn>=21.0.0
+gevent>=23.0.0
+gevent-websocket>=0.10.1
