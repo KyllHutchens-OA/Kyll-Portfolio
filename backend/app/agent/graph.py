@@ -3,7 +3,7 @@ AFL Analytics Agent - LangGraph Workflow
 
 Defines the agent workflow: UNDERSTAND → ANALYZE_DEPTH → PLAN → EXECUTE → VISUALIZE → RESPOND
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
 from langgraph.graph import StateGraph, END
 from openai import OpenAI
 import os
