@@ -45,10 +45,10 @@ def handle_chat_message(data):
         user_query = data.get('message')
         conversation_id = data.get('conversation_id')
 
-        # Emit function - in Socket.IO event handler context, emit() sends to requesting client
+        # Emit function - send only to the requesting client using their session ID
         def session_emit(event, data):
-            """Emit to the requesting client"""
-            socketio.emit(event, data)
+            """Emit to the requesting client only"""
+            socketio.emit(event, data, room=session_id)
 
         if not user_query:
             session_emit('error', {'message': 'No message provided'})
@@ -223,14 +223,21 @@ def handle_resume_message(data):
             "conversation_id": "uuid" (optional)
         }
     """
-    logger.info(f"Received resume message: {data}")
+    from flask import request
+    session_id = request.sid
+    logger.info(f"Received resume message from session {session_id}: {data}")
+
+    # Emit function - send only to the requesting client
+    def session_emit(event, data):
+        """Emit to the requesting client only"""
+        socketio.emit(event, data, room=session_id)
 
     try:
         user_query = data.get('message')
         conversation_id = data.get('conversation_id')
 
         if not user_query:
-            socketio.emit('resume_error', {'message': 'No message provided'})
+            session_emit('resume_error', {'message': 'No message provided'})
             return
 
         # Import resume agent
@@ -239,7 +246,7 @@ def handle_resume_message(data):
         # Create or load conversation (reuse same conversation service)
         if not conversation_id:
             conversation_id = ConversationService.create_conversation()
-            socketio.emit('resume_conversation_started', {'conversation_id': conversation_id})
+            session_emit('resume_conversation_started', {'conversation_id': conversation_id})
             logger.info(f"Created new resume conversation: {conversation_id}")
         else:
             logger.info(f"Continuing resume conversation: {conversation_id}")
@@ -252,7 +259,7 @@ def handle_resume_message(data):
         )
 
         # Initial progress update
-        socketio.emit('resume_thinking', {'step': 'Received your question...', 'current_step': 'received'})
+        session_emit('resume_thinking', {'step': 'Received your question...', 'current_step': 'received'})
 
         # Get conversation history for context
         conversation_history = ConversationService.get_recent_messages(
@@ -265,14 +272,14 @@ def handle_resume_message(data):
         final_state = asyncio.run(resume_agent.run(
             user_query=user_query,
             conversation_id=conversation_id,
-            socketio_emit=socketio.emit,
+            socketio_emit=session_emit,  # Pass session-specific emit
             conversation_history=conversation_history
         ))
         logger.info(f"Resume agent completed")
 
         # Send response
         response_text = final_state.get('natural_language_response', 'I was unable to process your query.')
-        socketio.emit('resume_response', {
+        session_emit('resume_response', {
             'text': response_text,
             'confidence': final_state.get('confidence', 0.0)
         })
@@ -289,10 +296,10 @@ def handle_resume_message(data):
         )
 
         # Send completion
-        socketio.emit('resume_complete', {'conversation_id': conversation_id})
+        session_emit('resume_complete', {'conversation_id': conversation_id})
 
     except Exception as e:
         logger.error(f"Error processing resume message: {e}")
         import traceback
         traceback.print_exc()
-        socketio.emit('resume_error', {'message': f'Error: {str(e)}'})
+        session_emit('resume_error', {'message': f'Error: {str(e)}'})

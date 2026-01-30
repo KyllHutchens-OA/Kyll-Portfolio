@@ -52,3 +52,4 @@ APScheduler==3.10.4
 gunicorn>=21.0.0
 gevent>=23.0.0
 gevent-websocket>=0.10.1
+sqlparse>=0.4.4
