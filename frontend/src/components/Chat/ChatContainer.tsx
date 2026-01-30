@@ -7,6 +7,7 @@ const MESSAGE_THRESHOLD = 20; // Suggest new chat after this many messages
 const ChatContainer: React.FC = () => {
   const [input, setInput] = useState('');
   const [dismissedNewChatPrompt, setDismissedNewChatPrompt] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { messages, isConnected, isThinking, thinkingStep, isLoadingHistory, sendMessage, startNewChat } = useWebSocket();
@@ -17,16 +18,33 @@ const ChatContainer: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Handle input focus - scroll into view for mobile keyboards
+  // Handle mobile keyboard visibility using visualViewport API
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      const keyboardH = window.innerHeight - viewport.height;
+      setKeyboardHeight(keyboardH > 50 ? keyboardH : 0);
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleResize);
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
+  // Handle input focus - scroll to bottom as backup
   const handleInputFocus = () => {
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
+    setTimeout(() => scrollToBottom(), 300);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isThinking]);
+  }, [messages, isThinking, keyboardHeight]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +58,10 @@ const ChatContainer: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] bg-white rounded-lg shadow-md border border-gray-200">
+    <div
+      className="flex flex-col h-[calc(100vh-12rem)] bg-white rounded-lg shadow-md border border-gray-200"
+      style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined }}
+    >
       {/* Connection Status & New Chat Button */}
       <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">

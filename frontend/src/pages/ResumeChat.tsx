@@ -42,25 +42,45 @@ const timelineItems = [
 const ResumeChat: React.FC = () => {
   const [input, setInput] = useState('');
   const [showTimeline, setShowTimeline] = useState(true);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isConnected, isThinking, thinkingStep, sendMessage } = useResumeWebSocket();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Handle input focus - scroll into view for mobile keyboards
-  const handleInputFocus = () => {
-    // Small delay to wait for keyboard to appear
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
-  };
+  // Handle mobile keyboard visibility using visualViewport API
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
 
+    const handleResize = () => {
+      // Calculate keyboard height as difference between window and viewport
+      const keyboardH = window.innerHeight - viewport.height;
+      setKeyboardHeight(keyboardH > 50 ? keyboardH : 0); // Only set if significant (keyboard)
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleResize);
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
+  // Scroll to bottom when keyboard appears or messages change
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isThinking]);
+  }, [messages, isThinking, keyboardHeight]);
+
+  // Also scroll on focus as backup
+  const handleInputFocus = () => {
+    setTimeout(() => scrollToBottom(), 300);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +97,11 @@ const ResumeChat: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      ref={containerRef}
+      className="min-h-screen bg-gray-50"
+      style={{ paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : undefined }}
+    >
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
