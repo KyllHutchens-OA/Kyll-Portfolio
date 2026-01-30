@@ -24,6 +24,9 @@ interface UseResumeWebSocketReturn {
 // Singleton socket instance
 let globalResumeSocket: Socket | null = null;
 
+// Use environment variable or default to localhost for development
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+
 export const useResumeWebSocket = (): UseResumeWebSocketReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -35,9 +38,9 @@ export const useResumeWebSocket = (): UseResumeWebSocketReturn => {
   useEffect(() => {
     // Use global singleton socket
     if (!globalResumeSocket) {
-      console.log('🔌 Creating new Resume WebSocket connection');
-      globalResumeSocket = io('http://localhost:5001', {
-        transports: ['websocket'],
+      console.log('🔌 Creating new Resume WebSocket connection to', BACKEND_URL);
+      globalResumeSocket = io(BACKEND_URL, {
+        transports: ['websocket', 'polling'],
         autoConnect: true,
       });
     } else {

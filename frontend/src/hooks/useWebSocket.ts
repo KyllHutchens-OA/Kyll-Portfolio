@@ -27,6 +27,9 @@ interface UseWebSocketReturn {
 // Singleton socket instance to prevent React StrictMode duplicate connections
 let globalSocket: Socket | null = null;
 
+// Use environment variable or default to localhost for development
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+
 export const useWebSocket = (): UseWebSocketReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -44,7 +47,7 @@ export const useWebSocket = (): UseWebSocketReturn => {
       setIsLoadingHistory(true);
       console.log('📜 Loading conversation history:', conversationId);
 
-      const response = await fetch(`http://localhost:5001/api/conversations/${conversationId}`);
+      const response = await fetch(`${BACKEND_URL}/api/conversations/${conversationId}`);
       if (!response.ok) {
         console.log('No existing conversation found, starting fresh');
         localStorage.removeItem(CONVERSATION_STORAGE_KEY);
@@ -91,9 +94,9 @@ export const useWebSocket = (): UseWebSocketReturn => {
   useEffect(() => {
     // Use global singleton socket to prevent React StrictMode duplicates
     if (!globalSocket) {
-      console.log('🔌 Creating new WebSocket connection');
-      globalSocket = io('http://localhost:5001', {
-        transports: ['websocket'],
+      console.log('🔌 Creating new WebSocket connection to', BACKEND_URL);
+      globalSocket = io(BACKEND_URL, {
+        transports: ['websocket', 'polling'],
         autoConnect: true,
       });
     } else {
