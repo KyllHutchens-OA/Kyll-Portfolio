@@ -192,9 +192,9 @@ const ResumeChat: React.FC = () => {
           </div>
 
           {/* Disclaimer */}
-          <div className="px-3 py-2 text-center">
+          <div className="px-3 py-1.5 text-center">
             <p className="text-xs text-gray-400">
-              This information may be inaccurate, for demonstration purposes only. Contact Kyll to confirm.
+              AI-generated responses may be inaccurate. For demonstration only.
             </p>
           </div>
 
