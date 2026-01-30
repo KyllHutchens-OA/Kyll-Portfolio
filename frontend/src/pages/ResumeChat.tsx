@@ -191,6 +191,13 @@ const ResumeChat: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Disclaimer */}
+          <div className="px-3 py-2 text-center">
+            <p className="text-xs text-gray-400">
+              This information may be inaccurate, for demonstration purposes only. Contact Kyll to confirm.
+            </p>
+          </div>
+
           {/* Input Area */}
           <form onSubmit={handleSubmit} className="border-t border-gray-200 p-3 sm:p-4">
             <div className="flex gap-2">
