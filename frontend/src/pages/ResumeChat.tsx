@@ -43,10 +43,19 @@ const ResumeChat: React.FC = () => {
   const [input, setInput] = useState('');
   const [showTimeline, setShowTimeline] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { messages, isConnected, isThinking, thinkingStep, sendMessage } = useResumeWebSocket();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Handle input focus - scroll into view for mobile keyboards
+  const handleInputFocus = () => {
+    // Small delay to wait for keyboard to appear
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
   };
 
   useEffect(() => {
@@ -186,9 +195,11 @@ const ResumeChat: React.FC = () => {
           <form onSubmit={handleSubmit} className="border-t border-gray-200 p-3 sm:p-4">
             <div className="flex gap-2">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onFocus={handleInputFocus}
                 placeholder="Ask about experience, skills..."
                 disabled={!isConnected || isThinking}
                 className="flex-1 px-3 py-2 sm:px-4 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
