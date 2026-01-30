@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js';
 
 interface TimelineItem {
@@ -14,6 +15,14 @@ interface CareerTimelineProps {
 }
 
 const CareerTimeline: React.FC<CareerTimelineProps> = ({ items }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   // Single color scheme - blue for work, purple for education
   const getColor = (type: string) => type === 'education' ? '#8b5cf6' : '#3b82f6';
 
@@ -35,7 +44,7 @@ const CareerTimeline: React.FC<CareerTimelineProps> = ({ items }) => {
       mode: 'lines' as const,
       line: {
         color: color,
-        width: 24,
+        width: isMobile ? 16 : 24,
       },
       name: item.company,
       hoverinfo: 'text' as const,
@@ -49,21 +58,26 @@ const CareerTimeline: React.FC<CareerTimelineProps> = ({ items }) => {
     y: items.map((_, index) => index),
     mode: 'markers' as const,
     marker: {
-      size: 10,
+      size: isMobile ? 7 : 10,
       color: '#fff',
       line: {
         color: items.map((item) => getColor(item.type)),
-        width: 2,
+        width: isMobile ? 1.5 : 2,
       },
     },
     hoverinfo: 'skip' as const,
     showlegend: false,
   };
 
+  // Truncate text for mobile
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   const layout = {
     title: {
       text: 'Career Timeline',
-      font: { size: 16, color: '#1f2937' },
+      font: { size: isMobile ? 14 : 16, color: '#1f2937' },
     },
     showlegend: false,
     xaxis: {
@@ -71,6 +85,7 @@ const CareerTimeline: React.FC<CareerTimelineProps> = ({ items }) => {
       showgrid: true,
       gridcolor: '#e5e7eb',
       tickformat: '%Y',
+      tickfont: { size: isMobile ? 10 : 12 },
     },
     yaxis: {
       title: '',
@@ -78,12 +93,15 @@ const CareerTimeline: React.FC<CareerTimelineProps> = ({ items }) => {
       tickmode: 'array' as const,
       tickvals: items.map((_, index) => index),
       ticktext: items.map((item) =>
-        `${item.title}<br><span style="font-size:10px;color:#6b7280">${item.company}</span>`
+        isMobile
+          ? truncateText(item.title, 15)
+          : `${item.title}<br><span style="font-size:10px;color:#6b7280">${item.company}</span>`
       ),
+      tickfont: { size: isMobile ? 9 : 12 },
       automargin: true,
     },
-    height: Math.max(220, items.length * 55 + 100),
-    margin: { l: 220, r: 40, t: 60, b: 40 },
+    height: isMobile ? Math.max(180, items.length * 40 + 80) : Math.max(220, items.length * 55 + 100),
+    margin: { l: isMobile ? 100 : 220, r: isMobile ? 20 : 40, t: isMobile ? 40 : 60, b: isMobile ? 30 : 40 },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     hovermode: 'closest' as const,

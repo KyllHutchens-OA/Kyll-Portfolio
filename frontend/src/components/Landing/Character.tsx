@@ -33,11 +33,11 @@ export const Character: React.FC<CharacterProps> = ({
       {/* Speech bubble */}
       {speechBubble && (
         <div
-          className="absolute -top-40 left-1/2 -translate-x-1/2 w-64 animate-fade-in"
+          className="absolute -top-28 sm:-top-40 left-1/2 -translate-x-1/2 w-48 sm:w-64 animate-fade-in"
           style={{ transform: 'translateX(-50%)' }}
         >
-          <div className="relative bg-white rounded-2xl px-4 py-3 shadow-lg border-2 border-gray-200">
-            <p className="text-gray-800 text-center text-sm font-medium">{speechBubble}</p>
+          <div className="relative bg-white rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg border-2 border-gray-200">
+            <p className="text-gray-800 text-center text-xs sm:text-sm font-medium">{speechBubble}</p>
             {/* Speech bubble tail */}
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
               <div className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-white"></div>
@@ -53,12 +53,10 @@ export const Character: React.FC<CharacterProps> = ({
         style={{ transform: direction === 'left' ? 'scaleX(-1)' : '' }}
       >
         <svg
-          width="240"
-          height="420"
           viewBox="0 0 80 140"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="drop-shadow-lg"
+          className="drop-shadow-lg w-32 h-56 sm:w-60 sm:h-[420px]"
         >
           {/* Hair (back layer - fuller) */}
           <ellipse

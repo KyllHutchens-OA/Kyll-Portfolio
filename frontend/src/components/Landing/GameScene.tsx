@@ -315,7 +315,7 @@ export const GameScene: React.FC = () => {
       {/* Fun fact button - center */}
       <button
         onClick={handleFunFact}
-        className="absolute top-28 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-yellow-400 hover:bg-yellow-300 text-gray-800 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300"
+        className="absolute top-40 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-2 sm:px-6 sm:py-3 rounded-full bg-yellow-400 hover:bg-yellow-300 text-gray-800 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300 z-10"
       >
         ✨ Fun fact about me!
       </button>
@@ -330,20 +330,23 @@ export const GameScene: React.FC = () => {
         />
       </div>
 
-      {/* Instructions */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center">
-        <p className="text-gray-600 text-sm bg-white/70 px-4 py-2 rounded-full backdrop-blur-sm">
-          Use <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">←</kbd>{' '}
-          <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">→</kbd> to walk,{' '}
-          <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">space</kbd> to jump,
-          or click a destination
+      {/* Instructions - hidden on very small screens, simplified on mobile */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center w-full px-4 sm:px-0 sm:w-auto">
+        <p className="text-gray-600 text-xs sm:text-sm bg-white/70 px-3 py-2 rounded-full backdrop-blur-sm">
+          <span className="hidden sm:inline">
+            Use <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">←</kbd>{' '}
+            <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">→</kbd> to walk,{' '}
+            <kbd className="px-2 py-1 bg-gray-200 rounded text-xs font-mono">space</kbd> to jump,
+            or click a destination
+          </span>
+          <span className="sm:hidden">Tap a destination above to navigate</span>
         </p>
       </div>
 
       {/* Title */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
-        <h1 className="text-3xl font-bold text-gray-800 drop-shadow-sm">Kyll Hutchens</h1>
-        <p className="text-gray-600">Welcome to my portfolio!</p>
+      <div className="absolute top-2 sm:top-4 left-1/2 -translate-x-1/2 text-center z-20">
+        <h1 className="text-xl sm:text-3xl font-bold text-gray-800 drop-shadow-sm">Kyll Hutchens</h1>
+        <p className="text-sm sm:text-base text-gray-600">Welcome to my portfolio!</p>
       </div>
     </div>
   );

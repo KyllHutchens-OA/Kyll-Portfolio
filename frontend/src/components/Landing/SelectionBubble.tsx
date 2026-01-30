@@ -19,26 +19,26 @@ export const SelectionBubble: React.FC<SelectionBubbleProps> = ({
     <button
       onClick={onClick}
       className={`
-        absolute top-8 animate-float
-        px-10 py-6 rounded-3xl
+        absolute top-20 sm:top-8 animate-float
+        px-4 py-3 sm:px-10 sm:py-6 rounded-2xl sm:rounded-3xl
         bg-white/90 backdrop-blur-sm
         border-3 border-transparent
         shadow-xl
         transition-all duration-300
-        hover:scale-110 hover:shadow-2xl
+        hover:scale-105 sm:hover:scale-110 hover:shadow-2xl
         focus:outline-none focus:ring-4 focus:ring-blue-300
         cursor-pointer
-        ${position === 'left' ? 'left-[12%]' : 'right-[12%]'}
+        ${position === 'left' ? 'left-2 sm:left-[12%]' : 'right-2 sm:right-[12%]'}
         ${isActive ? 'border-yellow-400 shadow-yellow-400/50' : 'hover:border-blue-400'}
       `}
       style={{
         animationDelay: position === 'left' ? '0s' : '0.5s',
       }}
     >
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-1 sm:gap-3">
         {icon === 'resume' ? (
           <svg
-            className="w-14 h-14 text-blue-500"
+            className="w-8 h-8 sm:w-14 sm:h-14 text-blue-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -52,7 +52,7 @@ export const SelectionBubble: React.FC<SelectionBubbleProps> = ({
           </svg>
         ) : (
           <svg
-            className="w-14 h-14 text-emerald-500"
+            className="w-8 h-8 sm:w-14 sm:h-14 text-emerald-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -65,7 +65,7 @@ export const SelectionBubble: React.FC<SelectionBubbleProps> = ({
             />
           </svg>
         )}
-        <span className="text-2xl font-semibold text-gray-800">{label}</span>
+        <span className="text-sm sm:text-2xl font-semibold text-gray-800">{label}</span>
       </div>
     </button>
   );
