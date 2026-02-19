@@ -6,7 +6,7 @@
 
 This project showcases an AI agent that autonomously analyzes Australian Football League (AFL) statistics, performs multi-step reasoning, and provides insights through natural language conversation with embedded interactive visualizations.
 
-**Tech Stack**: Flask (backend) + React (frontend) + LangGraph (agent framework) + GPT-5-mini + Supabase (PostgreSQL) + Plotly (visualizations)
+**Tech Stack**: Flask (backend) + React (frontend) + LangGraph (agent framework) + GPT-4o-mini + Supabase (PostgreSQL) + Plotly (visualizations)
 
 ## Features
 
@@ -26,42 +26,6 @@ This project showcases an AI agent that autonomously analyzes Australian Footbal
 "Which teams had the most wins in 2023?"
 "Show me Collingwood's scoring trend across 2024"
 ```
-
-## Quick Start
-
-### Prerequisites
-
-- Docker and Docker Compose
-- Supabase account (free tier)
-- OpenAI API key
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url>
-   cd afl-analytics-agent
-   ```
-
-2. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Supabase and OpenAI credentials
-   ```
-
-3. **Start services**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Run data ingestion** (first time only)
-   ```bash
-   docker-compose exec backend python -m app.data.ingestion.afl_tables
-   ```
-
-5. **Open the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
 
 ## Project Structure
 
@@ -98,38 +62,6 @@ This project showcases an AI agent that autonomously analyzes Australian Footbal
 - [DATABASE.md](docs/DATABASE.md) - Database schema documentation
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment instructions
 
-## Development
-
-### Backend
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-flask run
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Testing
-
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
 ## Architecture
 
 The agent uses **LangGraph** to orchestrate a multi-step workflow:
@@ -153,33 +85,22 @@ The agent uses **LangGraph** to orchestrate a multi-step workflow:
 Core tables:
 - `teams` - AFL teams (18 teams)
 - `players` - Player metadata
-- `matches` - Match results (2020-2024)
+- `matches` - Match results (1990-2025)
 - `player_stats` - Per-match player statistics
 - `team_stats` - Per-match team statistics
 - `conversations` - Agent conversation history
 
-## Cost
-
-- **Development**: Free (uses Supabase free tier)
-- **Production**: ~$10-20/month (OpenAI API calls)
-- All other components are free/open-source
-
 ## Roadmap
 
-### ✅ Completed (Weeks 1-3)
+### ✅ Completed
 - ✅ Historical data (1990-2025, 6,243 matches)
 - ✅ LangGraph agent workflow (UNDERSTAND → PLAN → EXECUTE → VISUALIZE → RESPOND)
-- ✅ GPT-4 text-to-SQL generation
+- ✅ GPT-4o-mini text-to-SQL generation
 - ✅ SQL validation and security
 - ✅ Plotly visualization generator with Hex-quality theme
 - ✅ Flask API with WebSocket support
 - ✅ React frontend with real-time chat
 - ✅ Chart rendering with react-plotly.js
-
-### ⏳ In Progress (Week 4)
-- 🔨 Add OPENAI_API_KEY to .env for testing
-- 📝 End-to-end testing with real queries
-- 📝 npm install for frontend dependencies
 
 ### Phase 2 (Future Enhancements)
 - [ ] Player statistics ingestion (~13,000 players)
@@ -204,4 +125,4 @@ Built as a data science portfolio project showcasing modern AI agent development
 
 ---
 
-**Built with**: LangGraph • GPT-5-mini • Flask • React • Supabase • Plotly
+**Built with**: LangGraph • GPT-4o-mini • Flask • React • Supabase • Plotly
