@@ -250,13 +250,17 @@ export const GameScene: React.FC = () => {
           dispatch({ type: 'START_JUMP' });
 
           // Store the navigation target
-          navigationRef.current = state.targetSelection === 'resume' ? '/resume' : '/afl';
+          navigationRef.current = state.targetSelection === 'resume' ? '/resume' : 'https://www.footynac.com';
 
           // Navigate after jump completes
           jumpTimeoutRef.current = setTimeout(() => {
             dispatch({ type: 'COMPLETE_JUMP' });
             if (navigationRef.current) {
-              navigate(navigationRef.current);
+              if (navigationRef.current.startsWith('http')) {
+                window.open(navigationRef.current, '_blank');
+              } else {
+                navigate(navigationRef.current);
+              }
             }
           }, JUMP_DURATION);
         }
@@ -305,7 +309,7 @@ export const GameScene: React.FC = () => {
         icon="resume"
       />
       <SelectionBubble
-        label="AFL AI Agent"
+        label="FootyNAC"
         position="right"
         onClick={handleSelectAFL}
         isActive={state.targetSelection === 'afl'}
