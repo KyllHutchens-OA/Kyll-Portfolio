@@ -16,8 +16,10 @@ RESUME_DATA = {
     "summary": """
     Data Analyst transitioning to an AI Developer role with extensive experience in Python, SQL,
     and machine learning. Passionate about leveraging LLMs and AI tools to create cutting-edge
-    data solutions and automation products. Fast learner eager to further develop technical
-    expertise and contribute innovative solutions in dynamic, forward-thinking environments.
+    data solutions and automation products. Uses AI at every stage of the development lifecycle —
+    from ideation and design through to deployment — to validate ideas, deliver elegant analysis,
+    and build real-world products. Fast learner eager to move into a full-time AI-focused role
+    where building AI-powered products is the daily work.
     """,
 
     "experience": [
@@ -71,7 +73,7 @@ RESUME_DATA = {
 
     "skills": {
         "Programming Languages": ["Python", "SQL", "TypeScript", "R"],
-        "AI & Machine Learning": ["LangGraph", "OpenAI API", "RAG Architecture", "LLM Agent Development", "Data Science / ML"],
+        "AI & Machine Learning": ["LangGraph", "LangChain", "OpenAI API", "Anthropic Claude API", "Claude Code", "MCP (Model Context Protocol)", "RAG Architecture", "LLM Agent Development", "Data Science / ML"],
         "Data Tools": ["PostgreSQL", "SQLAlchemy", "Tableau", "Power BI", "Plotly"],
         "Web Development": ["Flask", "React", "WebSocket/Socket.IO", "REST APIs"],
         "DevOps & Cloud": ["Git", "Azure", "Heroku"]
@@ -113,6 +115,18 @@ RESUME_DATA = {
             "link": "https://www.kh-applications.com/"
         },
         {
+            "name": "AFL Fantasy Prediction Models",
+            "description": "Machine learning models built to predict AFL Fantasy scores for player selection and team optimisation.",
+            "year": "2022-24",
+            "technologies": ["Python", "Scikit-learn", "Pandas", "Data Science / ML"],
+            "highlights": [
+                "Built predictive models for AFL Fantasy player scoring",
+                "Applied statistical analysis and feature engineering to sports data",
+                "Combined domain knowledge of AFL with data science techniques"
+            ],
+            "link": None
+        },
+        {
             "name": "AI Resume Chatbot",
             "description": "RAG-based chatbot enabling natural language interaction with professional resume, featuring career timeline visualization. You're using it right now!",
             "year": "2023-25",
@@ -128,12 +142,34 @@ RESUME_DATA = {
 
     "certifications": [],
 
+    "ai_workflow": {
+        "primary_tool": "Claude Code — tool of choice for AI-assisted development",
+        "approach": "Uses AI at every point in the development lifecycle, from initial ideation through to deployment. At a minimum, AI is used to reaffirm and validate ideas; at its best, it helps deliver elegant, well-crafted analysis and code.",
+        "experience_with": [
+            "Claude Code for end-to-end AI-assisted software development",
+            "Direct API integration with LLM providers (OpenAI, Anthropic)",
+            "MCP (Model Context Protocol) tools for extending AI capabilities",
+            "Building LangGraph and LangChain workflows for structured LLM orchestration",
+            "Designing multi-node agent state machines for complex query processing",
+            "RAG architectures for domain-specific knowledge retrieval"
+        ],
+        "philosophy": "AI is a force multiplier at every stage — not just code generation, but ideation, architecture validation, analysis, and deployment. The goal is to build real-world AI products that solve genuine problems."
+    },
+
+    "career_goals": {
+        "direction": "Looking to move into a full-time AI-focused role — one where building real-world AI-powered products is the daily work, not a side activity.",
+        "ideal_role": "A role that's all-in on AI, where Kyll can really sink his teeth into it and build real-world products daily.",
+        "strengths": "Combines deep data analysis experience with hands-on AI/ML engineering, bridging the gap between understanding data and building intelligent products on top of it."
+    },
+
     "interests": [
         "AI/ML Development",
+        "AI-Assisted Development Workflows",
         "Data Automation",
         "Sports Analytics",
         "Natural Language Processing",
-        "Full-Stack Development"
+        "Full-Stack Development",
+        "AFL Fantasy & Predictive Modelling"
     ]
 }
 
@@ -188,6 +224,30 @@ def get_resume_context(query_intent: str = None) -> str:
 Technologies: {', '.join(proj['technologies'])}
 Highlights: {', '.join(proj['highlights'][:2])}
 """)
+
+    # AI Workflow
+    if 'ai_workflow' in RESUME_DATA:
+        ai = RESUME_DATA['ai_workflow']
+        sections.append("\n## AI Workflow & Tools")
+        sections.append(f"Primary Tool: {ai['primary_tool']}")
+        sections.append(f"Approach: {ai['approach']}")
+        sections.append(f"Philosophy: {ai['philosophy']}")
+        sections.append("Experience with:")
+        for item in ai['experience_with']:
+            sections.append(f"  - {item}")
+
+    # Career Goals
+    if 'career_goals' in RESUME_DATA:
+        goals = RESUME_DATA['career_goals']
+        sections.append("\n## Career Goals")
+        sections.append(f"Direction: {goals['direction']}")
+        sections.append(f"Ideal Role: {goals['ideal_role']}")
+        sections.append(f"Strengths: {goals['strengths']}")
+
+    # Interests
+    if 'interests' in RESUME_DATA:
+        sections.append("\n## Interests")
+        sections.append(', '.join(RESUME_DATA['interests']))
 
     return '\n'.join(sections)
 
